@@ -1,0 +1,68 @@
+{
+  "scope": "synthetic workbook arithmetic and mathematical weight sensitivity only",
+  "seed": 20261027,
+  "cases": 100,
+  "unique_case_ids": 100,
+  "roles": {
+    "Software Engineer": 10,
+    "Data Analyst": 10,
+    "Project Manager": 10,
+    "Sales Executive": 10,
+    "HR Executive": 10,
+    "Customer Support Specialist": 10,
+    "Marketing Executive": 10,
+    "Finance Executive": 10,
+    "QA Engineer": 10,
+    "UI/UX Designer": 10
+  },
+  "case_patterns": {
+    "contradiction": 15,
+    "mixed": 10,
+    "aligned": 20,
+    "strong": 15,
+    "weak": 15,
+    "ai_human_agree_wrong": 20,
+    "missing": 5
+  },
+  "annotation_rows": 500,
+  "annotation_rows_with_any_core_field_missing": 500,
+  "provisional_benchmark_cases": 100,
+  "stored_era_mean": 0.8087399999999999,
+  "stored_era_min": 0.667,
+  "stored_era_max": 0.947,
+  "recomputed_era_mean": 0.808754,
+  "mean_absolute_difference": 0.00026499999999999967,
+  "maximum_absolute_difference": 0.0006000000000000449,
+  "rows_difference_gt_0_001": 0,
+  "named_weight_schemes": {
+    "equal": {
+      "mean_composite": 0.8054899999999999,
+      "spearman_rho_vs_proposed": 0.944652635057283
+    },
+    "evidence_heavy": {
+      "mean_composite": 0.8018734999999999,
+      "spearman_rho_vs_proposed": 0.9683226422175067
+    },
+    "traceability_heavy": {
+      "mean_composite": 0.8050654999999999,
+      "spearman_rho_vs_proposed": 0.9552621235757689
+    }
+  },
+  "monte_carlo_sensitivity": {
+    "local_dirichlet_40x_proposed": {
+      "draws": 10000,
+      "p05": 0.8844097474491506,
+      "median": 0.9638941727996687,
+      "p95": 0.9916783179195515,
+      "share_rho_ge_0_90": 0.9213
+    },
+    "broad_dirichlet_ones": {
+      "draws": 10000,
+      "p05": 0.476787739508971,
+      "median": 0.7541959447837241,
+      "p95": 0.9342270280817945,
+      "share_rho_ge_0_90": 0.111
+    }
+  },
+  "interpretation": "These results do not establish construct validity, criterion validity, AI accuracy, human agreement, fairness, explanation usefulness, or real-world effectiveness."
+}

@@ -1,0 +1,732 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+  10pt,
+  a4paper,
+  runningheads]{llncs}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{2} % number sections and subsections in LNCS style
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Evidence--Rating Alignment for Evidence-Grounded HRMS Performance Evaluation}
+\titlerunning{Evidence--Rating Alignment in HRMS}
+\author{Divesh Singh\\
+GLA University, Mathura, India\\
+\email{divesh.singh\_phd.cs24@gla.ac.in}\\[8pt]
+Dr. Dilip Kumar Sharma\\
+GLA University, Mathura, India\\
+\email{dilip.sharma@gla.ac.in}}
+\authorrunning{D. Singh and D. K. Sharma}
+\institute{}
+\date{}
+
+\begin{document}
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{1em}
+\maketitle
+\begin{abstract}
+
+Employee-performance evaluation in human resource management systems
+(HRMS) can produce ratings and explanations that appear consistent while
+lacking criterion-specific evidential support. Agreement between an
+evaluator and a manager is not, by itself, evidence that the rating is
+justified. This paper specifies Evidence--Rating Alignment (ERA), a
+proposed measurement layer for auditing the relationship between role
+criteria, available evidence, ratings, and explanation claims. ERA
+combines Evidence Coverage (EC), Evidence Relevance (ER), Criterion
+Agreement (CA), Evidence Traceability (ET), and a Contradiction Penalty
+(CP): ERA = 0.25EC + 0.25ER + 0.25CA + 0.15ET + 0.10(1-CP). The paper
+evaluates the arithmetic and data structure of an existing synthetic
+pilot workbook containing 100 constructed cases across 10 job roles and
+500 criterion-level annotation rows. All 100 reference records remain
+explicitly provisional, and all core annotation fields are blank;
+consequently, they cannot serve as independently validated ground truth.
+Recalculation of the stored ERA composite produced a maximum absolute
+discrepancy of 0.0006 and no row exceeded a 0.001 tolerance. An
+exploratory weight-sensitivity analysis on the synthetic component
+values showed greater rank stability under local perturbations around
+the proposed weights than under broad perturbations across the weight
+simplex. These are computational and mathematical audit results only.
+They do not demonstrate AI accuracy, human agreement,
+employee-performance validity, fairness, explanation usefulness, or
+real-world effectiveness. ERA is presented as a transparent, testable
+design proposal whose validity remains an open empirical question.
+
+\keywords{Explainable AI \and Human resource management systems \and Employee performance evaluation \and Evidence grounding \and Auditability \and Synthetic data \and Composite indicators}
+\end{abstract}
+
+\section{Introduction}\label{introduction}
+
+AI-supported HRM can help organize records and support decisions, but
+employee performance is context-dependent and consequential. Research on
+AI in HRM identifies concerns involving data quality, accountability,
+fairness, privacy, employee experience, and the role of human judgment
+{[}1,2,11,12{]}. Research on explainable AI (XAI) also cautions that an
+explanation should be evaluated in relation to its purpose and audience
+rather than assumed trustworthy merely because it is readable {[}3,4{]}.
+
+Consider a hypothetical employee for whom a manager and an AI system
+both assign 4/5. The agreement may look reassuring, but both assessments
+may have omitted a missed deadline or relied on a metric unrelated to
+the employee's role. Agreement alone cannot reveal whether the rating is
+supported by appropriate records. This example is illustrative, not an
+observed organizational case.
+
+This paper addresses the measurement gap between a performance
+criterion, the evidence available and used, the rating assigned, and the
+claims offered to justify it. It introduces Evidence--Rating Alignment
+(ERA) as a proposed audit layer rather than a predictive model or a
+complete definition of fairness. ERA is intended to make evidence
+coverage, relevance, reference agreement, traceability, and
+contradiction visible in a common record. The central contribution is a
+transparent operational specification and an audit of the currently
+available synthetic pilot dataset. No new human annotations, real
+employee records, or fresh LLM outputs are introduced.
+
+\section{Research Problem, Objectives, and
+Contributions}\label{research-problem-objectives-and-contributions}
+
+Research problem: how can an HRMS represent whether a criterion-level
+performance rating is supported by role-relevant evidence, make
+contradictions and missing support visible, and preserve a traceable
+record for review and contestation?
+
+The paper has four objectives: (1) define the five ERA components and a
+normalized composite; (2) specify how the composite can be embedded in
+an evidence-to-rating workflow; (3) audit the structure and arithmetic
+of the existing 100-case synthetic workbook; and (4) examine how
+rankings from its provisional component values respond to alternative
+weights. These objectives are intentionally narrower than evaluating a
+live AI system or determining whether ERA improves human decisions.
+
+The contributions are: (a) a criterion-level operational definition of
+evidence--rating alignment; (b) a proposed audit record linking
+criteria, evidence identifiers, ratings, contradictions, and review
+actions; (c) a reproducible dataset and formula audit; and (d) an
+exploratory weight-sensitivity analysis. The paper does not claim that
+the composite is validated, that the synthetic reference scores are
+independent ground truth, or that ERA outperforms existing approaches.
+
+\section{Related Work and Research
+Gap}\label{related-work-and-research-gap}
+
+Responsible-AI research in HRM has examined accountability, privacy,
+fairness, transparency, and employee involvement
+{[}1,2,5,11,12,20,23{]}. These works motivate governance-aware designs,
+but broad principles do not themselves specify a case-by-criterion
+measure of whether a particular rating is grounded in particular
+evidence. Reviews of algorithmic decision-making in employment also show
+that fairness and discrimination concerns arise across recruitment and
+development settings {[}5,20{]}.
+
+XAI research offers methods for explaining predictions, including local
+explanation techniques such as LIME {[}3,4{]}. However, explanation
+fluency or feature attribution is not equivalent to verifying that a
+record supports a criterion-specific claim. ERA therefore treats
+evidence relevance and traceability as separate dimensions, rather than
+treating the presence of an explanation as proof of evidential support.
+
+Research on algorithmic management and organizational justice emphasizes
+worker experience, power, procedural fairness, dignity, and
+contestability {[}6--9,13,14,17,18{]}. A numerical evidence-alignment
+score cannot replace these dimensions. A high ERA score should not be
+interpreted as proof of fairness, legitimacy, or acceptable employment
+procedure.
+
+A directly related study by Li, Zhou, and Xu examines LLM-based
+performance evaluation against an external expert-consensus reference
+{[}10{]}. That design illustrates the importance of independent
+benchmarks when evaluating ratings. The present paper does not run an
+LLM and has no independently adjudicated benchmark. Its contribution is
+complementary and methodological: it specifies a candidate
+evidence-alignment layer and audits the arithmetic of a synthetic
+prototype. The claimed gap is limited to the selected sources discussed
+here; it is not a claim that no related method exists anywhere in the
+literature.
+
+\section{Literature Search and Evidence
+Boundary}\label{literature-search-and-evidence-boundary}
+
+The source base is a targeted, structured search for a focused narrative synthesis, not a systematic review. The source manuscript records 11 October 2026 as the search date. Topics included responsible AI in HRM, employee-performance evaluation, explainable AI, algorithmic fairness, human oversight, and benchmark validity. Eligibility focused on English-language scholarly work and authoritative guidance directly relevant to these topics. The search was single-researcher and targeted; independent duplicate screening, a complete deduplication log, formal risk-of-bias assessment, and PRISMA flow counts were not preserved. Therefore, the paper does not claim systematic-review status, comprehensive coverage, or a verified 43-study corpus. Reference [23] is treated only as an external published source.
+
+\section{ERA Framework and Mathematical
+Specification}\label{era-framework-and-mathematical-specification}
+
+For case i, let k index predefined role criteria and j index evidence
+items. Criterion weights w\textsubscript{i}\textsubscript{k} are non-negative and sum to one over the
+criteria assessable for that case. Let r\textsubscript{i} be the evaluated rating and b\textsubscript{i}
+the reference rating on the same anchored 1--5 scale. The five ERA
+components are normalized to {[}0,1{]}. A component is undefined if its
+denominator is zero; in that situation, the case should be flagged and a
+complete composite should not be silently manufactured.
+
+The proposed composite is:
+
+\textbf{ERA\textsubscript{i} = 0.25 EC\textsubscript{i} + 0.25 ER\textsubscript{i} + 0.25 CA\textsubscript{i} + 0.15 ET\textsubscript{i} + 0.10 (1 -
+CP\textsubscript{i})}
+
+\subsection{Evidence Coverage (EC)}\label{evidence-coverage-ec}
+
+Let A\textsubscript{i}\textsubscript{k} = 1 when criterion k is assessable and 0 otherwise, and R\textsubscript{i}\textsubscript{k} = 1
+when at least one required, relevant evidence item was retrieved for
+that criterion. Then EC\textsubscript{i} = Σ\textsubscript{k} w\textsubscript{i}\textsubscript{k} A\textsubscript{i}\textsubscript{k} R\textsubscript{i}\textsubscript{k} / Σ\textsubscript{k} w\textsubscript{i}\textsubscript{k} A\textsubscript{i}\textsubscript{k}. The denominator
+must be positive. Coverage measures whether the required evidence was
+available to the evaluator; it does not establish that the evidence is
+accurate.
+
+\subsection{Evidence Relevance (ER)}\label{evidence-relevance-er}
+
+For each evidence item actually used, a pre-registered rubric assigns
+s\textsubscript{i}\textsubscript{j} $\in$ \{1,2,3,4,5\}; normalize q\textsubscript{i}\textsubscript{j} = (s\textsubscript{i}\textsubscript{j} - 1)/4. With non-negative use
+weights v\textsubscript{i}\textsubscript{j}, ER\textsubscript{i} = Σ\textsubscript{j} v\textsubscript{i}\textsubscript{j} q\textsubscript{i}\textsubscript{j} / Σ\textsubscript{j} v\textsubscript{i}\textsubscript{j}. Equal weights are the default
+unless another rule is justified before analysis. Evidence that was
+available but not used is excluded from this component and should be
+recorded separately as a retrieval omission. If no item was used, ER is
+undefined.
+
+\subsection{Criterion Agreement (CA)}\label{criterion-agreement-ca}
+
+CA\textsubscript{i} = max(0, 1 - \textbar r\textsubscript{i} - b\textsubscript{i}\textbar/4), where r\textsubscript{i} and b\textsubscript{i} use the
+same anchored 1--5 scale. CA expresses agreement with the selected
+reference, not proof that the reference is correct. Because the current
+reference values are synthetic and provisional, CA values calculated
+from them must not be interpreted as agreement with validated
+employee-performance ground truth.
+
+\subsection{Contradiction Penalty
+(CP)}\label{contradiction-penalty-cp}
+
+Let c\textsubscript{i}\textsubscript{j} = 1 when evidence item j materially contradicts the evaluated
+claim under a defined coding rubric and 0 otherwise. CP\textsubscript{i} = Σ\textsubscript{j} v\textsubscript{i}\textsubscript{j} c\textsubscript{i}\textsubscript{j} /
+Σ\textsubscript{j} v\textsubscript{i}\textsubscript{j} over assessable evidence items used. Missing evidence is not
+automatically contradictory. If no assessable evidence was used, CP is
+undefined.
+
+\subsection{Evidence Traceability
+(ET)}\label{evidence-traceability-et}
+
+Let L\textsubscript{i} be the number of atomic rating or explanation claims that require
+support and T\textsubscript{i} the number that include a valid evidence identifier and a
+verifiable claim-to-record mapping. ET\textsubscript{i} = T\textsubscript{i}/L\textsubscript{i}. A citation or
+identifier alone is insufficient: the record must exist, be accessible
+to an authorized reviewer, and support the relevant claim. If L\textsubscript{i} = 0, ET
+is undefined.
+
+\subsection{Weighting and
+Interpretation}\label{weighting-and-interpretation}
+
+The weights sum to one and are a transparent, theory-led starting
+configuration, not empirically estimated parameters. EC, ER, and CA each
+receive 0.25; ET receives 0.15; and CP contributes a 0.10 penalty term.
+These choices express design priorities rather than proven relative
+importance. Composite-indicator research recommends explicit weight
+assumptions and sensitivity checks {[}21,22{]}. The additive score is
+compensatory, so it must be shown alongside component values and flags.
+A high score must not override missing evidence, material contradiction,
+or the need for human review, and it must not automatically determine
+pay, promotion, termination, or other employment outcomes.
+
+\section{Proposed XAI--HRMS Workflow and Audit
+Record}\label{proposed-xaihrms-workflow-and-audit-record}
+
+The proposed workflow begins with authorized records and a frozen
+role-specific criterion rubric. A retrieval or evidence-selection stage
+links each assessable criterion to evidence identifiers, provenance,
+source type, and time window. A rating stage records the criterion-level
+score and the evidence actually used. An audit stage computes the ERA
+components, records missing and contradictory evidence, and identifies
+unsupported claims. A human-review stage permits the authorized reviewer
+to inspect the records, override or abstain from a rating, record a
+rationale, and initiate correction or appeal. The architecture is a
+design specification, not a deployed HRMS service.
+
+For each criterion-level output, the audit record should include: case
+and criterion IDs; rubric version; rating and scale; evidence IDs used;
+evidence provenance and timestamps; evidence relevance and validity
+coding; missing or contradictory evidence flags; atomic explanation
+claims and their evidence links; component values; composite ERA;
+undefined-component flags; reviewer action and rationale; and a
+versioned audit timestamp. The record supports traceability and
+contestability but does not itself prove that a rating is fair or valid.
+
+\section{Explanation, Fairness, and Human Oversight
+Measures}\label{explanation-fairness-and-human-oversight-measures}
+
+The current dataset contains no generated natural-language explanations
+that were independently reviewed. Therefore explanation quality is
+specified, not measured. For a future evaluation, explanations should be
+decomposed into atomic factual claims. Let N be the number of eligible
+claims, S the number fully supported, U the number unsupported or
+contradicted, V the number unverifiable because required records are
+unavailable, and P the number partially supported. These categories
+should be mutually exclusive and sum to N. Evidence Support Rate is S/N;
+Unsupported Claim Rate is U/N; Unverifiable Claim Rate is V/N; and
+Partial Support Rate is P/N. If N=0, these metrics are undefined.
+
+Evidence identification precision and recall can be calculated against a
+separately frozen evidence key: EIP =
+\textbar R$\cap$G\textbar/\textbar R\textbar{} and EIR =
+\textbar R$\cap$G\textbar/\textbar G\textbar, where R is the set of returned
+evidence IDs and G is the set of required IDs. Their harmonic mean is
+reported only when defined. For planted contradictions, error-detection
+precision, recall, F1, and false-positive rate can be measured. These
+metrics are not reported as results here because no qualifying model
+outputs or independently scored explanations are present.
+
+Explanation usefulness should be measured through separately reported
+reviewer ratings of clarity, evidence sufficiency, actionability, and
+contestability. Fairness requires a separate analysis of decision
+processes and error patterns; ERA itself contains no protected-attribute
+or subgroup fairness term. Sensitive attributes should be used only
+where lawfully authorized and ethically approved. Meaningful human
+oversight requires the ability to inspect evidence, challenge a rating,
+correct records, abstain, and appeal. These are design requirements, not
+evaluated outcomes of the current study.
+
+\section{Data and Methods}\label{data-and-methods}
+
+\subsection{Available Dataset}\label{available-dataset}
+
+The analysis uses the existing workbook
+\url{ERA_Pilot_Dataset_100_Cases_QC_Corrected.xlsx}, sheet
+``100\_Cases\_QC\_Corrected'', plus its role-criteria and
+annotation-form sheets. The case table contains 100 synthetic records,
+100 unique case IDs, and 10 roles with 10 cases per role. The designed
+case-pattern distribution is: aligned (20), ai\_human\_agree\_wrong
+(20), contradiction (15), strong (15), weak (15), mixed (10), and
+missing (5). These proportions are features of the constructed dataset
+and must not be interpreted as the prevalence of these patterns in real
+organizations.
+
+The workbook also contains 500 criterion-level annotation rows (five per
+case). The core fields for evidence relevance, evidence validity,
+criterion benchmark rating, and contradiction coding are blank in all
+500 rows. Every case's benchmark status explicitly states that human
+annotation/adjudication is required before the reference can be treated
+as validated ground truth. Despite a field name containing ``independent
+benchmark'', the scores are rule-generated synthetic anchors; the label
+does not make them empirically independent or human-validated.
+
+\subsection{Analysis Plan}\label{analysis-plan}
+
+Three analyses were conducted using existing workbook values only.
+First, a structural audit checked row counts, unique identifiers, role
+coverage, pattern counts, annotation completeness, and benchmark status.
+Second, the stored composite was independently recomputed from the
+documented formula and the workbook's EC, ER, CA, CP, and ET columns;
+absolute differences were summarized. Third, an exploratory sensitivity
+analysis recomputed scores under three named alternative weight
+configurations and 10,000 random weight draws under each of two
+Dirichlet schemes. The random generator seed was fixed at 20261027. Rank
+stability was measured with Spearman's rank correlation relative to the
+proposed weights.
+
+The sensitivity analysis is a mathematical analysis of provisional
+synthetic component values, not a test of predictive accuracy or
+construct validity. The source files available for this revision did not
+include a complete transformation script and per-case output table
+sufficient to reproduce the earlier described three-condition
+experiment. Therefore, the earlier condition means and associated
+rating-error results are not reported in this version. No new LLM/API
+calls, human annotations, or real employee records were used.
+
+\section{Results}\label{results}
+
+\subsection{Dataset and Formula
+Audit}\label{dataset-and-formula-audit}
+
+The structural audit identified 100 cases with 100 unique IDs, no
+duplicate case IDs, and 10 roles represented by 10 cases each. All 100
+benchmark records remained provisional. The annotation workbook
+contained 500 criterion-level rows, with zero rows containing any of the
+four core rating/coding fields. The stored ERA composite had a mean of
+0.80874 and ranged from 0.667 to 0.947; these are descriptive summaries
+of the supplied synthetic records, not model performance results.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Audit item}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Result}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Interpretation}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Synthetic cases / unique IDs & 100 / 100 & No duplicate case IDs
+found. \\
+Roles & 10; 10 cases per role & Balanced by construction. \\
+Criterion annotation rows & 500 & Five criterion rows per case. \\
+Rows with any core annotation field completed & 0 of 500 & No human
+annotations are present. \\
+Provisional benchmark status & 100 of 100 cases & Reference scores are
+not validated ground truth. \\
+Mean absolute difference: stored vs recomputed ERA & 0.000265 &
+Consistent with rounding in the workbook. \\
+Maximum absolute difference & 0.000600 & No row exceeded the 0.001
+tolerance. \\
+Rows with difference \textgreater{} 0.001 & 0 & Arithmetic consistency
+check passed at the stated tolerance. \\
+\end{longtable}
+
+The formula audit supports a narrow conclusion: the stored composite
+values are arithmetically consistent with the documented equation to
+within the specified tolerance. It does not validate the component
+annotations, synthetic reference scores, weights, or substantive meaning
+of the score.
+
+\subsection{Exploratory Weight
+Sensitivity}\label{exploratory-weight-sensitivity}
+
+Under the proposed weights, the mean composite recalculated from the
+available component fields was 0.808754. Three named alternative weight
+sets produced Spearman rank correlations of 0.9446 (equal weights),
+0.9685 (evidence-heavy), and 0.9552 (traceability-heavy) relative to the
+proposed weights. In the 10,000-draw local Dirichlet analysis centered
+on the proposed weights, the median rank correlation was 0.9639
+(5th--95th percentile: 0.8844--0.9917), and 92.13\% of draws had $\rho \geq 0.90$. Under broad Dirichlet(1,1,1,1,1) perturbations, the median was
+0.7542 (5th--95th percentile: 0.4768--0.9342), and 11.10\% of draws had $\rho \geq 0.90$.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Weight scheme}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Mean composite}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Spearman $\rho$ vs proposed}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Proposed: 0.25, 0.25, 0.25, 0.15, 0.10 & 0.808754 & 1.0000 \\
+Equal: 0.20 each & 0.805490 & 0.9446 \\
+Evidence-heavy: 0.30, 0.30, 0.15, 0.15, 0.10 & 0.801874 & 0.9685 \\
+Traceability-heavy: 0.20, 0.20, 0.20, 0.25, 0.15 & 0.805065 & 0.9552 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1667}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Random-weight scheme}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Draws}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{5th percentile $\rho$}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Median $\rho$}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{95th percentile $\rho$}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Share with $\rho \geq 0.90$}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Local: Dirichlet(40 × proposed weights) & 10,000 & 0.8844 & 0.9639 &
+0.9917 & 92.13\% \\
+Broad: Dirichlet(1,1,1,1,1) & 10,000 & 0.4768 & 0.7542 & 0.9342 &
+11.10\% \\
+\end{longtable}
+
+The sensitivity analysis indicates that rankings of these synthetic
+cases are more stable when weights remain near the proposed
+configuration and less stable when weights vary broadly. These
+proportions describe analyst-selected mathematical perturbations; they
+are not probabilities that the weights are correct. Because the
+underlying component values are synthetic and provisional, the analysis
+does not establish optimal weights, real-world rank stability, or
+validity of employee ratings.
+
+\section{Discussion}\label{discussion}
+
+\subsection{What the Current Analysis
+Establishes}\label{what-the-current-analysis-establishes}
+
+The available evidence supports three limited conclusions. First, the
+ERA equation is explicitly defined and can be recalculated from the
+supplied normalized component fields. Second, the workbook has a
+balanced synthetic structure across ten named roles, while its 500
+annotation rows remain unfilled and its reference status remains
+provisional. Third, case rankings based on these synthetic components
+are relatively stable under local weight perturbations but more
+sensitive under broad perturbations. These conclusions are reproducible
+from the included workbook and script.
+
+\subsection{What It Does Not
+Establish}\label{what-it-does-not-establish}
+
+The analysis does not show that ERA identifies correct
+employee-performance ratings, that an AI system generated the listed
+illustrative ratings, that a human reviewer agrees with the benchmark,
+or that ERA improves decisions. The workbook's
+``illustrative\_ai\_rating'' field is not accompanied by a model
+identifier, prompt, run log, or raw model output; it is therefore
+treated as an illustrative synthetic field rather than a reproducible AI
+result. The synthetic reference scores are not independent human ground
+truth. No human inter-rater reliability, explanation faithfulness,
+fairness, reviewer usefulness, or organizational deployment result is
+available.
+
+\subsection{Implications for HRMS
+Design}\label{implications-for-hrms-design}
+
+ERA is best understood as a candidate audit layer that makes evidence
+coverage, relevance, agreement, contradiction, and traceability
+explicit. In an HRMS, component-level visibility may help a reviewer
+identify why a composite score is high or low, but the score should
+never conceal an undefined component or a critical contradiction. A
+system should display the component profile and the underlying records,
+allow abstention when evidence is insufficient, and preserve a contest
+path. These are design implications, not claims that such benefits have
+been demonstrated.
+
+\subsection{Research Questions
+Revisited}\label{research-questions-revisited}
+
+RQ1 (operationalization) is addressed at the specification and
+arithmetic-audit level. RQ2 (response to controlled evidence changes) is
+not claimed as a finding in this version because the available
+condition-level transformation artifacts were insufficient to reproduce
+the earlier reported experiment. RQ3 (incremental value over simpler
+baselines) remains unanswered because no independent outcome is
+available. RQ4 (weight sensitivity) is addressed only as a mathematical
+sensitivity analysis on synthetic components. RQ5 (reliability,
+usefulness, fairness, and external validity) remains outside the
+evidence currently available. These boundaries are part of the result,
+not a request that the current paper be supplemented with invented data.
+
+\section{Validity, Ethics, and
+Limitations}\label{validity-ethics-and-limitations}
+
+Construct validity is not established: the component definitions are a
+proposal and have not been validated by a representative expert panel or
+against independent outcomes. Criterion validity is not established
+because the reference scores are synthetic and provisional. Internal
+validity for an evidence-intervention effect cannot be assessed without
+reproducible condition transformations and outputs. External validity is
+not established because no real employee records or organization were
+studied. Computational reproducibility is supported for the formula
+audit and weight sensitivity analysis; human annotation reliability was
+not measured.
+
+The dataset is synthetic, with 100 constructed cases across 10 roles.
+Its pattern frequencies are designed and do not estimate real-world
+prevalence. All 500 core annotation records are blank. The workbook
+includes rating-like strings that were capped at the stated 5-point
+scale in a quality-corrected copy; the correction log preserves the
+edits and raw evidence strings. This correction improves scale
+consistency but does not validate the content. The illustrative rating
+field lacks documented model provenance. Weight sensitivity depends on
+analyst-selected perturbation distributions and provisional inputs.
+
+No real employee data, personally identifiable information, human
+participant data, or external LLM/API calls were used in the current
+computational audit. This statement does not assert that institutional
+ethics approval or exemption has been granted. Any later study involving
+human participants or real employee data must follow the relevant
+institutional and legal review, data minimization, access control,
+retention, and governance requirements. ERA must not automatically
+determine employment outcomes; meaningful review and contestability are
+necessary safeguards.
+
+\section{Conclusion}\label{conclusion}
+
+This paper presents Evidence--Rating Alignment (ERA) as a proposed
+measurement layer for auditing whether employee-performance ratings are
+supported by criterion-relevant evidence. It defines five normalized
+components---coverage, relevance, criterion agreement, traceability, and
+contradiction penalty---and specifies how they can be embedded in an
+auditable HRMS workflow. An audit of the available 100-case synthetic
+workbook found 100 unique cases across 10 roles, 500 uncompleted
+criterion-level annotation rows, provisional benchmark status for every
+case, and stored composite values that matched the documented equation
+within a maximum absolute discrepancy of 0.0006. An exploratory
+sensitivity analysis showed stronger rank stability under local than
+broad weight perturbations on these synthetic values.
+
+The contribution is a framework specification and reproducible
+computational audit, not a validated employee-performance instrument. No
+human or LLM results are claimed, and no real-world accuracy, fairness,
+or decision-improvement effect is inferred. The paper is complete within
+that declared scope: it reports what the existing artifacts can support
+and explicitly excludes claims that they cannot support. ERA should
+remain a research prototype and must not be used as a standalone
+employment decision score.
+
+\section{Reproducibility Statement}\label{reproducibility-statement}
+
+The analysis uses the QC-corrected workbook, the ERA formula stated in
+Section 5, and the included fixed-seed script
+(era_reproducibility_audit.py). The script performs structural checks,
+recomputes the composite, evaluates three named alternative weight
+configurations, and samples 10,000 weight vectors for each of two
+sensitivity schemes. The accompanying package includes the input
+workbook, script, case-level recomputed scores, Monte Carlo draw-level
+CSV files, and machine-readable summary JSON. All computed
+results are descriptive of synthetic data and should be interpreted
+within the limitations stated above.
+
+\begin{thebibliography}{23}
+\bibitem{r1} A. Bujold et al., ``Responsible artificial intelligence in human
+resources management: A review of the empirical literature,'' AI and
+Ethics, vol. 4, pp. 1185--1200, 2024, doi: 10.1007/s43681-023-00325-1.
+\bibitem{r2} A. Varma, C. Dawkins, and K. Chaudhuri, ``Artificial
+intelligence and people management: A critical assessment through the
+ethical lens,'' Human Resource Management Review, vol. 33, no. 1,
+100923, 2023, doi: 10.1016/j.hrmr.2022.100923.
+\bibitem{r3} T. Miller, ``Explanation in artificial intelligence: Insights
+from the social sciences,'' Artificial Intelligence, vol. 267, pp.
+1--38, 2019, doi: 10.1016/j.artint.2018.07.007.
+\bibitem{r4} M. T. Ribeiro, S. Singh, and C. Guestrin, ``Why should I trust
+you? Explaining the predictions of any classifier,'' in Proc. KDD, 2016,
+pp. 1135--1144, doi: 10.1145/2939672.2939778.
+\bibitem{r5} A. Köchling and M. C. Wehner, ``Discriminated by an algorithm: A
+systematic review of discrimination and fairness by algorithmic
+decision-making in HR recruitment and development,'' Business Research,
+vol. 13, pp. 795--848, 2020, doi: 10.1007/s40685-020-00134-w.
+\bibitem{r6} D. T. Newman, N. J. Fast, and D. J. Harmon, ``When eliminating
+bias isn't fair: Algorithmic reductionism and procedural justice in
+human resource decisions,'' Organizational Behavior and Human Decision
+Processes, vol. 160, pp. 149--167, 2020, doi:
+10.1016/j.obhdp.2020.03.008.
+\bibitem{r7} J. Qin, Y. Jia, X. Luo, Q. V. Liao, and Z. Huang, ``Perceived
+fairness of human managers compared with artificial intelligence in
+employee performance evaluation,'' Journal of Management Information
+Systems, vol. 40, no. 4, pp. 1039--1070, 2023, doi:
+10.1080/07421222.2023.2267316.
+\bibitem{r8} K. C. Kellogg, M. A. Valentine, and A. Christin, ``Algorithms at
+work: The new contested terrain of control,'' Academy of Management
+Annals, vol. 14, no. 1, pp. 366--410, 2020, doi:
+10.5465/annals.2018.0174.
+\bibitem{r9} A. Keegan and J. Meijerink, ``Algorithmic management in
+organizations? From edge case to center stage,'' Annual Review of
+Organizational Psychology and Organizational Behavior, vol. 12, pp.
+395--422, 2025, doi: 10.1146/annurev-orgpsych-110622-070928.
+\bibitem{r10} N. Li, H. Zhou, and M. Xu, ``From text to insight: Leveraging
+large language models for performance evaluation in management,''
+Personnel Psychology, vol. 79, no. 2, pp. 251--267, 2026, doi:
+10.1111/peps.70020.
+\bibitem{r11} P. Tambe, P. Cappelli, and V. Yakubovich, ``Artificial
+intelligence in human resources management: Challenges and a path
+forward,'' California Management Review, vol. 61, no. 4, pp. 15--42,
+2019, doi: 10.1177/0008125619867910.
+\bibitem{r12} A. Malik, P. Budhwar, and B. A. Kazmi, ``Artificial
+intelligence (AI)-assisted HRM: Towards an extended strategic
+framework,'' Human Resource Management Review, vol. 33, no. 1, 100940,
+2023, doi: 10.1016/j.hrmr.2022.100940.
+\bibitem{r13} N. Noponen et al., ``Taylorism on steroids or enabling
+autonomy? A systematic review of algorithmic management,'' Management
+Review Quarterly, vol. 74, pp. 1695--1721, 2024, doi:
+10.1007/s11301-023-00345-5.
+\bibitem{r14} S. Bankins, P. Formosa, Y. Griep, and D. Richards, ``AI
+decision making with dignity? Contrasting workers' justice perceptions
+of human and AI decision making in a human resource management
+context,'' Information Systems Frontiers, vol. 24, pp. 857--875, 2022,
+doi: 10.1007/s10796-021-10223-8.
+\bibitem{r15} A. Shulner-Tal et al., ``Who made that decision and why? Users'
+perceptions of human versus AI decision-making and the power of
+explainable AI,'' International Journal of Human--Computer Interaction,
+2024, doi: 10.1080/10447318.2024.2348843.
+\bibitem{r16} X. Xu, Y. Chen, and J. Dong, ``Shaping the fairness journey:
+The roles of AI literacy, explanation, and interpersonal interaction in
+AI interviews,'' International Journal of Human-Computer Studies, vol.
+205, 103629, 2025, doi: 10.1016/j.ijhcs.2025.103629.
+\bibitem{r17} S. Amershi et al., ``Guidelines for human-AI interaction,'' in
+Proc. CHI, 2019, doi: 10.1145/3290605.3300233.
+\bibitem{r18} N. Bennett and C. L. Martin, ``AI as a talent management tool:
+An organizational justice perspective,'' Business Horizons, vol. 69, no.
+2, pp. 241--252, 2026, doi: 10.1016/j.bushor.2025.03.005.
+\bibitem{r19} M. J. Page et al., ``The PRISMA 2020 statement: an updated
+guideline for reporting systematic reviews,'' BMJ, vol. 372, n71, 2021,
+doi: 10.1136/bmj.n71.
+\bibitem{r20} I. Kekez, L. Lauwaert, and N. Begičević Ređep, ``Is artificial
+intelligence (AI) research biased and conceptually vague? A systematic
+review of research on bias and discrimination in the context of using AI
+in human resource management,'' Technology in Society, vol. 81, 102818,
+2025, doi: 10.1016/j.techsoc.2025.102818.
+\bibitem{r21} OECD/European Union/European Commission Joint Research Centre,
+Handbook on Constructing Composite Indicators: Methodology and User
+Guide. Paris: OECD Publishing, 2008, doi: 10.1787/9789264043466-en.
+\bibitem{r22} W. Becker, M. Saisana, P. Paruolo, and I. Vandecasteele,
+``Weights and importance in composite indicators: Closing the gap,''
+Ecological Indicators, vol. 80, pp. 12--22, 2017, doi:
+10.1016/j.ecolind.2017.03.056.
+\bibitem{r23} R. F. Naoum, T. Szakadáti, and G. Balogh, ``Artificial
+Intelligence (AI) in human resource management (HRM): a systematic
+review of its dual impact on diversity, equity, and inclusion (DEI),''
+Management Review Quarterly, published online 8 January 2026, doi:
+10.1007/s11301-025-00580-y.
+\end{thebibliography}
+\end{document}

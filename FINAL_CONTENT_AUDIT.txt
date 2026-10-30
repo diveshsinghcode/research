@@ -1,0 +1,36 @@
+ERA MANUSCRIPT - FINAL CONTENT AUDIT (30 October 2026)
+
+Scope
+This audit checks the supplied revised LNCS source/PDF, the QC-corrected synthetic workbook, the planted-defect materials, and selected bibliographic records. It is not a guarantee of conference acceptance, plagiarism clearance, or publisher compliance.
+
+Corrections made in this pass
+1. Recomputed the ERA formula from all 100 case rows in the QC-corrected workbook.
+2. Re-ran the three named alternative-weight comparisons and both 10,000-draw Dirichlet sensitivity analyses with NumPy default_rng seed 20261027.
+3. Corrected the Monte Carlo values in the manuscript to match the newly included reproducibility script and its outputs.
+4. Added the exact QC-corrected workbook used by the paper, a reproducibility script, per-case recomputed scores, two draw-level CSV files, and a machine-readable JSON summary.
+5. Recompiled the revised LNCS source twice with XeLaTeX. Result: 10-page PDF (within the stated 10-12 page range).
+
+Recomputed results
+- Cases: 100; unique IDs: 100; 10 roles with 10 cases each.
+- Annotation rows: 500; all 500 have at least one missing core annotation field; the four key human annotation fields remain uncompleted.
+- Provisional benchmark status: 100/100 cases.
+- Stored ERA mean: 0.808740; recomputed mean: 0.808754.
+- Mean absolute stored-vs-recomputed difference: 0.000265; maximum: 0.000600; rows above 0.001: 0.
+- Named alternative weight rank correlations vs proposed: equal 0.9447; evidence-heavy 0.9683; traceability-heavy 0.9553.
+- Local Dirichlet(40 x proposed weights): 10,000 draws; 5th/median/95th rho 0.8844/0.9639/0.9917; 92.13% rho >= 0.90.
+- Broad Dirichlet(1,1,1,1,1): 10,000 draws; 5th/median/95th rho 0.4768/0.7542/0.9342; 11.10% rho >= 0.90.
+
+Interpretation
+These are arithmetic and weight-sensitivity results on constructed synthetic records. They do not establish construct validity, criterion validity, AI accuracy, human agreement, fairness, explanation usefulness, or real-world HRMS effectiveness. The planted-defect check is circular by design and is not independent validation. The manuscript correctly limits its claims on these points.
+
+Bibliographic spot-check
+Publisher/official records were located for selected important entries, including Bujold et al. (2024), Miller (2019), Qin et al. (2023), Kellogg et al. (2020), Li et al. (2026), Bennett and Martin (2026), Page et al. (2021), Naoum et al. (2026), Amershi et al. (2019), and Becker et al. (2017). These checks support the title/venue/year/DOI metadata for those selected records. This was a spot-check, not a line-by-line verification of every bibliographic field in all 23 entries.
+
+Remaining submission checks outside this audit
+- All authors must personally approve the final manuscript, author order, affiliations, and email addresses.
+- Check ICAIST/CMT status, current deadline or extension, exact Springer LNNS template requirements, copyright forms, and any AI-use disclosure required by the conference/publisher.
+- Review the final PDF visually, especially tables, equations, author details, and references.
+- No similarity report is included; no plagiarism percentage or guarantee is asserted.
+
+Overall assessment
+CONTENT: MINOR FIXES COMPLETED IN THIS PASS; no new human/LLM/real-employee experiment is claimed or required for the paper's explicitly limited framework-and-computational-audit scope. RESEARCH VALIDATION: NOT ESTABLISHED. SUBMISSION ADMINISTRATIVE READINESS: AUTHOR/CONFERENCE CONFIRMATION STILL REQUIRED.

@@ -1,39 +1,82 @@
 #!/usr/bin/env python3
-"""Reproduce ERA synthetic dataset structure, formula, and weight-sensitivity audits.
-No human annotations or external model outputs are generated or assumed.
-Usage: python era_reproducibility_audit.py ERA_Pilot_Dataset_100_Cases_QC_Corrected.xlsx --outdir results
-Dependencies: pandas, openpyxl, numpy, scipy
+"""Reproduce the ERA workbook arithmetic and weight-sensitivity audit.
+
+This script audits only the supplied synthetic workbook. It does not test
+human agreement, model accuracy, fairness, or real-world validity.
 """
-import argparse, json
+import argparse, csv, json
 from pathlib import Path
-import numpy as np, pandas as pd
+import numpy as np
+from openpyxl import load_workbook
 from scipy.stats import spearmanr
 
+SEED = 20261027
+WEIGHTS = np.array([0.25, 0.25, 0.25, 0.10, 0.15])  # EC, ER, CA, (1-CP), ET
+ALT = {
+    "equal": np.array([.20, .20, .20, .20, .20]),
+    "evidence_heavy": np.array([.30, .30, .15, .10, .15]),
+    "traceability_heavy": np.array([.20, .20, .20, .15, .25]),
+}
+
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('workbook'); ap.add_argument('--outdir',default='era_results'); args=ap.parse_args()
-    out=Path(args.outdir); out.mkdir(parents=True,exist_ok=True)
-    df=pd.read_excel(args.workbook,sheet_name='100_Cases_QC_Corrected')
-    ann=pd.read_excel(args.workbook,sheet_name='Original_Annotation_Form')
-    required=['case_id','role','case_pattern','EC','ER','CA','CP','ET','illustrative_ERA','annotation_status']
-    missing=[c for c in required if c not in df.columns]
-    if missing: raise ValueError(f'Missing columns: {missing}')
-    formula=.25*df.EC+.25*df.ER+.25*df.CA+.15*df.ET+.10*(1-df.CP)
-    diff=(formula-df.illustrative_ERA).abs()
-    X=np.column_stack([df.EC,df.ER,df.CA,df.ET,1-df.CP]).astype(float)
-    w0=np.array([.25,.25,.25,.15,.10]); base=X@w0
-    schemes={'Proposed':w0,'Equal':np.array([.2]*5),'Evidence-heavy':np.array([.30,.30,.15,.15,.10]),'Traceability-heavy':np.array([.20,.20,.20,.25,.15])}
-    named=[]
-    for name,w in schemes.items():
-        s=X@w; named.append({'weight_scheme':name,'weights':w.tolist(),'mean_composite':float(s.mean()),'spearman_rho_vs_proposed':float(spearmanr(base,s).statistic)})
-    rng=np.random.default_rng(20261027); mc=[]
-    for name,alpha in [('Local Dirichlet(40 × proposed weights)',40*w0),('Broad Dirichlet(1,1,1,1,1)',np.ones(5))]:
-        rhos=[]
-        for _ in range(10000): rhos.append(float(spearmanr(base,X@rng.dirichlet(alpha)).statistic))
-        rhos=np.asarray(rhos); mc.append({'scheme':name,'draws':10000,'seed':20261027,'rho_p05':float(np.quantile(rhos,.05)),'rho_median':float(np.quantile(rhos,.5)),'rho_p95':float(np.quantile(rhos,.95)),'share_rho_ge_0_90':float(np.mean(rhos>=.90))})
-    pd.DataFrame(named).to_csv(out/'weight_sensitivity_named.csv',index=False); pd.DataFrame(mc).to_csv(out/'weight_sensitivity_monte_carlo.csv',index=False)
-    anncols=['evidence_relevant_1to5','evidence_validity_1to5','benchmark_criterion_rating_1to5','contradiction_present_yes_no']
-    status=df.annotation_status.astype(str).str.contains('requires human annotation/adjudication',case=False,na=False)
-    result={'case_count':int(len(df)),'unique_case_ids':int(df.case_id.nunique()),'duplicate_case_ids':int(df.case_id.duplicated().sum()),'role_count':int(df.role.nunique()),'cases_per_role':{str(k):int(v) for k,v in df.role.value_counts().sort_index().items()},'case_pattern_counts':{str(k):int(v) for k,v in df.case_pattern.value_counts().sort_index().items()},'annotation_rows':int(len(ann)),'annotation_rows_with_any_core_field_filled':int(ann[anncols].notna().any(axis=1).sum()),'provisional_benchmark_cases':int(status.sum()),'formula_max_abs_difference':float(diff.max()),'formula_mean_abs_difference':float(diff.mean()),'formula_rows_abs_diff_gt_0_001':int((diff>.001).sum()),'stored_ERA_mean_descriptive_only':float(df.illustrative_ERA.mean()),'stored_ERA_min':float(df.illustrative_ERA.min()),'stored_ERA_max':float(df.illustrative_ERA.max()),'sensitivity_named':named,'sensitivity_monte_carlo':mc,'interpretation':'Synthetic/provisional data only. No AI accuracy, human agreement, employee-performance validity, fairness, or real-world effectiveness is estimated.'}
-    (out/'audit_summary.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
-    print(json.dumps(result,indent=2))
-if __name__=='__main__': main()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("workbook", help="QC-corrected synthetic workbook")
+    ap.add_argument("--outdir", default="era_audit_outputs")
+    args = ap.parse_args()
+    out = Path(args.outdir); out.mkdir(parents=True, exist_ok=True)
+    wb = load_workbook(args.workbook, data_only=True, read_only=True)
+    if "100_Cases" not in wb.sheetnames or "Annotation_Form" not in wb.sheetnames:
+        raise SystemExit("Expected 100_Cases and Annotation_Form sheets")
+    ws = wb["100_Cases"]
+    data = list(ws.values); headers = list(data[0]); ix = {h:i for i,h in enumerate(headers)}
+    required = ["case_id", "role", "case_pattern", "EC", "ER", "CA", "CP", "ET", "illustrative_ERA", "independent_benchmark_label"]
+    missing = [x for x in required if x not in ix]
+    if missing: raise SystemExit(f"Missing columns: {missing}")
+    rows = data[1:]
+    vals = np.array([[float(r[ix[c]]) for c in ["EC","ER","CA","CP","ET","illustrative_ERA"]] for r in rows])
+    EC, ER, CA, CP, ET, stored = vals.T
+    calculated = .25*EC + .25*ER + .25*CA + .15*ET + .10*(1-CP)
+    diffs = np.abs(stored-calculated)
+    ann = list(wb["Annotation_Form"].values)
+    ah = {h:i for i,h in enumerate(ann[0])}
+    core = ["evidence_relevant_1to5", "evidence_validity_1to5", "benchmark_criterion_rating_1to5", "contradiction_present_yes_no"]
+    incomplete_rows = sum(1 for r in ann[1:] if any(r[ah[c]] is None or str(r[ah[c]]).strip()=="" for c in core))
+    ids = [r[ix["case_id"]] for r in rows]
+    roles = {}
+    for r in rows: roles[str(r[ix["role"]])] = roles.get(str(r[ix["role"]]),0)+1
+    patterns = {}
+    for r in rows: patterns[str(r[ix["case_pattern"]])] = patterns.get(str(r[ix["case_pattern"]]),0)+1
+    provisional = sum("requires human annotation" in str(r[ix["annotation_status"]]).lower() for r in rows)
+
+    def score(w): return w[0]*EC + w[1]*ER + w[2]*CA + w[3]*(1-CP) + w[4]*ET
+    base = score(WEIGHTS)
+    named = {}
+    for name, w in ALT.items():
+        sc = score(w)
+        named[name] = {"mean_composite": float(sc.mean()), "spearman_rho_vs_proposed": float(spearmanr(base,sc).statistic)}
+    rng = np.random.default_rng(SEED)
+    sensitivity = {}
+    for name, alpha in [("local_dirichlet_40x_proposed", 40*WEIGHTS), ("broad_dirichlet_ones", np.ones(5))]:
+        draws = rng.dirichlet(alpha, size=10000)
+        rho = np.array([spearmanr(base, score(w)).statistic for w in draws])
+        sensitivity[name] = {"draws":10000,"p05":float(np.quantile(rho,.05)),"median":float(np.median(rho)),"p95":float(np.quantile(rho,.95)),"share_rho_ge_0_90":float(np.mean(rho>=.90))}
+        with (out/f"{name}.csv").open("w",newline="") as f:
+            wr=csv.writer(f); wr.writerow(["draw","spearman_rho"]); wr.writerows((i+1,float(x)) for i,x in enumerate(rho))
+    summary = {
+      "scope":"synthetic workbook arithmetic and mathematical weight sensitivity only",
+      "seed":SEED,"cases":len(rows),"unique_case_ids":len(set(ids)),"roles":roles,"case_patterns":patterns,
+      "annotation_rows":len(ann)-1,"annotation_rows_with_any_core_field_missing":incomplete_rows,
+      "provisional_benchmark_cases":provisional,
+      "stored_era_mean":float(stored.mean()),"stored_era_min":float(stored.min()),"stored_era_max":float(stored.max()),
+      "recomputed_era_mean":float(calculated.mean()),"mean_absolute_difference":float(diffs.mean()),
+      "maximum_absolute_difference":float(diffs.max()),"rows_difference_gt_0_001":int(np.sum(diffs>.001)),
+      "named_weight_schemes":named,"monte_carlo_sensitivity":sensitivity,
+      "interpretation":"These results do not establish construct validity, criterion validity, AI accuracy, human agreement, fairness, explanation usefulness, or real-world effectiveness."
+    }
+    (out/"ERA_reproducibility_audit_summary.json").write_text(json.dumps(summary,indent=2)+"\n")
+    with (out/"ERA_case_level_recomputed_scores.csv").open("w",newline="") as f:
+        wr=csv.writer(f); wr.writerow(["case_id","stored_ERA","recomputed_ERA","absolute_difference"])
+        wr.writerows((r[ix["case_id"]],float(s),float(c),float(d)) for r,s,c,d in zip(rows,stored,calculated,diffs))
+    print(json.dumps(summary,indent=2))
+
+if __name__ == "__main__": main()
