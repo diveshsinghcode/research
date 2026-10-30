@@ -1,0 +1,107 @@
+{
+  "case_count": 100,
+  "unique_case_ids": 100,
+  "duplicate_case_ids": 0,
+  "role_count": 10,
+  "cases_per_role": {
+    "Customer Support Specialist": 10,
+    "Data Analyst": 10,
+    "Finance Executive": 10,
+    "HR Executive": 10,
+    "Marketing Executive": 10,
+    "Project Manager": 10,
+    "QA Engineer": 10,
+    "Sales Executive": 10,
+    "Software Engineer": 10,
+    "UI/UX Designer": 10
+  },
+  "case_pattern_counts": {
+    "ai_human_agree_wrong": 20,
+    "aligned": 20,
+    "contradiction": 15,
+    "missing": 5,
+    "mixed": 10,
+    "strong": 15,
+    "weak": 15
+  },
+  "annotation_rows": 500,
+  "annotation_rows_with_any_core_field_filled": 0,
+  "provisional_benchmark_cases": 100,
+  "formula_max_abs_difference": 0.0006000000000000449,
+  "formula_mean_abs_difference": 0.00026499999999999967,
+  "formula_rows_abs_diff_gt_0_001": 0,
+  "stored_ERA_mean_descriptive_only": 0.8087399999999999,
+  "stored_ERA_min": 0.667,
+  "stored_ERA_max": 0.947,
+  "sensitivity_named": [
+    {
+      "weight_scheme": "Proposed",
+      "weights": [
+        0.25,
+        0.25,
+        0.25,
+        0.15,
+        0.1
+      ],
+      "mean_composite": 0.808754,
+      "spearman_rho_vs_proposed": 1.0
+    },
+    {
+      "weight_scheme": "Equal",
+      "weights": [
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2
+      ],
+      "mean_composite": 0.8054899999999999,
+      "spearman_rho_vs_proposed": 0.9446317987614614
+    },
+    {
+      "weight_scheme": "Evidence-heavy",
+      "weights": [
+        0.3,
+        0.3,
+        0.15,
+        0.15,
+        0.1
+      ],
+      "mean_composite": 0.8018734999999999,
+      "spearman_rho_vs_proposed": 0.9684726581191949
+    },
+    {
+      "weight_scheme": "Traceability-heavy",
+      "weights": [
+        0.2,
+        0.2,
+        0.2,
+        0.25,
+        0.15
+      ],
+      "mean_composite": 0.8050654999999999,
+      "spearman_rho_vs_proposed": 0.9552352549542211
+    }
+  ],
+  "sensitivity_monte_carlo": [
+    {
+      "scheme": "Local Dirichlet(40 \u00d7 proposed weights)",
+      "draws": 10000,
+      "seed": 20261027,
+      "rho_p05": 0.8871550384500461,
+      "rho_median": 0.9641341982423699,
+      "rho_p95": 0.991637213562489,
+      "share_rho_ge_0_90": 0.9247
+    },
+    {
+      "scheme": "Broad Dirichlet(1,1,1,1,1)",
+      "draws": 10000,
+      "seed": 20261027,
+      "rho_p05": 0.47959123667972164,
+      "rho_median": 0.7563111689975287,
+      "rho_p95": 0.936084825008302,
+      "share_rho_ge_0_90": 0.1209
+    }
+  ],
+  "interpretation": "Synthetic/provisional data only. No AI accuracy, human agreement, employee-performance validity, fairness, or real-world effectiveness is estimated."
+}
